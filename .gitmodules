@@ -1,0 +1,6 @@
+[submodule "onion-hono-sample"]
+	path = onion-hono-sample
+	url = git@github.com:TakayukiHirano117/onion-hono-sample.git
+[submodule "next-front"]
+	path = next-front
+	url = git@github.com:TakayukiHirano117/next-front.git
