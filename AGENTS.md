@@ -28,6 +28,7 @@
 - API の現状説明: `onion-hono-sample/README.md`
 - API の作業ルール: `onion-hono-sample/AGENTS.md`
 - API の層構造ルール: `onion-hono-sample/.cursor/rules/ddd-onion-architecture.mdc`
+- API のトップ画像・R2: `onion-hono-sample/.cursor/rules/object-storage-and-top-image.mdc`
 - API の実際の入口: `onion-hono-sample/src/Cmd/bun.ts`（ローカル）、`onion-hono-sample/src/Cmd/worker.ts`（Cloudflare Workers）
 - Frontend の作業ルール: `next-front/AGENTS.md`
 - Frontend の実装前確認: `next-front/node_modules/next/dist/docs/`
@@ -40,6 +41,7 @@
 - `as any` は使わない。型を壊すより、型設計か境界の置き方を見直す。
 - 本質的な実装と関係ないリファクタ、整形、ファイル移動を混ぜない。
 - サブプロジェクト横断の設計変更、認証方式変更、DB スキーマ変更は事前に確認する。
+- **設計レビューで合意した判断**（層の責務、命名、インフラ方針など）は、実装前または実装と同時に対象サブプロジェクトの `.cursor/rules/*.mdc` へ反映する。再発防止のため、プランや会話だけに留めない。
 
 ## Verification
 
