@@ -1,0 +1,84 @@
+---
+description: Conventional Commits によるコミットメッセージ規約
+alwaysApply: true
+---
+
+# Conventional Commits
+
+コミットメッセージは [Conventional Commits](https://www.conventionalcommits.org/) に準拠する。
+参考: [minop1205/conventional-commits.md](https://gist.github.com/minop1205/5fc4f6ef0ec89fb1738833ba25ae00a0)
+
+## Format
+
+```
+<type>[optional scope]: <subject>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+`type` と `subject` は必須。`body` / `footer` を入れる場合は空行を挟む。
+
+## 言語
+
+- `subject` と `body` は**日本語**で記述する
+- `type` と `scope` は Conventional Commits の慣例に従い英語 lowerCase で記述する
+- `footer` の `BREAKING CHANGE:` や `Closes` などのキーワードは英語のままとする
+
+## type（必須・lowerCase）
+
+| type | 用途 |
+|------|------|
+| feat | 新機能 |
+| fix | バグ修正 |
+| refactor | リファクタリング |
+| docs | ドキュメント |
+| test | テスト |
+| style | コードスタイル修正 |
+| perf | パフォーマンス |
+| build | ビルド |
+| ci | CI |
+| chore | 雑事 |
+| revert | コミット取り消し |
+
+```
+fix: バグを修正           # ✅
+FIX: バグを修正           # ❌
+foo: バグを修正           # ❌
+```
+
+## scope（任意・lowerCase）
+
+```
+fix(domain): バリデーションを修正   # ✅
+fix(DOMAIN): バリデーションを修正   # ❌
+```
+
+## subject（必須・日本語）
+
+- 日本語で記述する
+- 末尾に `.` を付けない
+- 「何をしたか」より「適用するとどうなるか」を示す
+- 簡潔に書く（体言止めでも可）
+
+```
+fix: タイポを修正                 # ✅
+fix: タイポを修正。               # ❌
+fix:                              # ❌
+fix: fix typo in validation       # ❌（英語不可）
+```
+
+## body / footer（任意）
+
+- `body` は subject の詳細を日本語で記述する
+- 破壊的変更は `footer` に `BREAKING CHANGE:` で記載する（説明文は日本語）
+- Issue を閉じる場合は `Closes #123` 形式で footer に記載する
+
+```
+fix: コード内の軽微なタイポを修正
+
+修正内容の詳細は issue を参照
+
+Closes #12
+```

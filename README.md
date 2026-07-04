@@ -11,6 +11,83 @@
 
 詳細は各サブプロジェクトの README / `AGENTS.md` を参照してください。
 
+`onion-hono-sample` と `next-front` は Git サブモジュールです。親リポジトリ（この `macching-app`）は **各サブモジュールが指す commit SHA だけ** を記録し、実装そのものは子リポジトリ側で行います。
+
+| サブモジュール | リポジトリ | 通常の作業ブランチ |
+|---|---|---|
+| `onion-hono-sample/` | [onion-hono-sample](https://github.com/TakayukiHirano117/onion-hono-sample) | `develop` |
+| `next-front/` | [next-front](https://github.com/TakayukiHirano117/next-front) | `main` |
+
+### 日常の開発（子 → 親）
+
+実装作業は **子リポジトリで行い、親は参照する commit を更新する** のが基本です。
+
+```bash
+# 1. 子リポジトリで実装・commit・push
+cd onion-hono-sample   # または next-front
+git checkout develop   # next-front の場合は main
+# ... 実装 ...
+git add .
+git commit -m "feat: ..."
+git push origin develop
+
+# 2. 親リポジトリでサブモジュールのポインタを更新
+cd ..
+git add onion-hono-sample   # または next-front
+git commit -m "chore: onion-hono-sample のサブモジュール参照を更新"
+git push origin main
+```
+
+ポイント:
+
+- 親の `git add next-front` は **コードのマージではなく、使う commit の固定** です。
+- **子を push してから親を push** してください。親だけ先に push すると、他の環境で存在しない commit を参照してしまいます。
+- API とフロントを同時に進めた場合は、子それぞれを push したあと、親で両方のポインタをまとめて更新しても構いません。
+
+### 初回 clone と同期（親 → 子）
+
+clone 直後や、他人が親のサブモジュール参照を更新したあとは、**親 → 子** の方向で揃えます。
+
+```bash
+# 初回 clone（サブモジュール込み）
+git clone --recurse-submodules git@github.com:TakayukiHirano117/macching-app.git
+
+# すでに clone 済みの場合
+git submodule update --init --recursive
+
+# 親を pull したあと、記録どおりの commit に揃える
+git pull origin main
+git submodule update --init --recursive
+```
+
+`git submodule update` のあと、作業ブランチに戻す場合:
+
+```bash
+cd onion-hono-sample && git checkout develop
+cd ../next-front && git checkout main
+```
+
+### 状態確認
+
+```bash
+# 親が記録している commit と、ローカル checkout 中の commit の差分
+git submodule status
+
+# 先頭に + がある場合、親が指す commit とローカルが一致していない
+# 親側で git add <submodule> が必要
+```
+
+### よくあるつまずき
+
+| 症状 | 原因 | 対処 |
+|---|---|---|
+| 親は更新したのに中身が古い | `git submodule update` 未実行 | `git submodule update --init --recursive` |
+| サブモジュールが detached HEAD | `submodule update` のデフォルト動作 | 各子で `git checkout develop` / `main` |
+| clone した人の環境で submodule が空 | `--recurse-submodules` なしで clone | `git submodule update --init --recursive` |
+| 親 PR だけマージして CI が壊れる | 子の commit がリモートにない | 先に子リポジトリを push してから親を更新 |
+
+参考: [Git Book - Submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules)
+
 ## フロントエンドの設計方針
 
 `next-front` は [Next.jsの考え方](https://zenn.dev/akfm/books/nextjs-basic-principle)（akfm）の次のプラクティスに沿って実装しています。
@@ -75,8 +152,16 @@ Server Actions ── revalidatePath / redirect
 各サブプロジェクトの `package.json` を正とします。
 
 ```bash
+# リポジトリ取得（初回のみ）
+git clone --recurse-submodules git@github.com:TakayukiHirano117/macching-app.git
+cd macching-app
+
 # API（onion-hono-sample/ の README 参照）
-# フロント
+cd onion-hono-sample
+bun install
+# README の手順に従って DB 起動・マイグレーション・dev サーバー起動
+
+# フロント（別ターミナル）
 cd next-front
 bun install
 ONION_API_BASE_URL=http://localhost:3001/api/v1 bun run dev
