@@ -1,0 +1,81 @@
+# develop → main マージ後（main への push）に本番へデプロイする。
+# サブモジュールが指す commit を checkout し、API → フロントの順で deploy する。
+#
+# 必要な GitHub Secrets（親リポジトリ macching-app の Settings → Secrets）:
+#   CLOUDFLARE_API_TOKEN  … Cloudflare API Token（Workers 編集権限）
+#   CLOUDFLARE_ACCOUNT_ID … Cloudflare Account ID（フロント deploy 用）
+#   DATABASE_URL          … Supabase 直結の接続文字列（API migration 用）
+#   GH_PAT                … サブモジュール checkout 用 PAT（repo スコープ。公開 repo のみなら省略可）
+#
+# 参考: onion-hono-sample/scripts/cloudflare-setup.md ステップ 9
+
+name: Deploy Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy-api:
+    name: Deploy API (onion-hono-sample)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: onion-hono-sample
+
+    steps:
+      - name: Checkout with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.GH_PAT || github.token }}
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Migrate database
+        run: bun run migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          workingDirectory: onion-hono-sample
+
+  deploy-front:
+    name: Deploy Front (next-front)
+    needs: deploy-api
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: next-front
+
+    steps:
+      - name: Checkout with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.GH_PAT || github.token }}
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build and deploy to Cloudflare Workers
+        run: bunx opennextjs-cloudflare build && bunx opennextjs-cloudflare deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

@@ -73,9 +73,29 @@ ONION_API_BASE_URL=http://localhost:3000/api/v1 bun run dev -- -p 3001
 
 | 変数 | 必須 | 説明 |
 |------|------|------|
-| `ONION_API_BASE_URL` | はい | API のベース URL（例: `http://localhost:3000/api/v1`） |
+| `ONION_API_BASE_URL` | ローカルでは必須 | API のベース URL（例: `http://localhost:3000/api/v1`）。Cloudflare 本番では Service Binding を使用するため不要 |
 
-## アーキテクチャ概要
+## 本番デプロイ（Cloudflare + Supabase）
+
+**詳細手順（本番のみ）**: [`onion-hono-sample/scripts/cloudflare-setup.md`](onion-hono-sample/scripts/cloudflare-setup.md)
+
+| コンポーネント | デプロイ先 | 備考 |
+|---|---|---|
+| API | Cloudflare Workers（非公開） | Hyperdrive → Supabase、R2 に画像 |
+| フロント | Cloudflare Workers（OpenNext） | Service Binding で API に接続 |
+| DB | Supabase PostgreSQL | マイグレーションは CI / ローカルから実行 |
+
+**デプロイ順**: API → フロント → `MEDIA_PUBLIC_BASE_URL` 更新 → API 再 deploy
+
+**CI 方針**
+
+| 環境 | トリガー | 実行場所 |
+|------|----------|----------|
+| 本番 | 親 repo の `develop` → `main` マージ | [`macching-app/.github/workflows/deploy.yml`](.github/workflows/deploy.yml) |
+| stg（今後） | 各子 repo の `develop` 向け | 子 repo ごとに独立（予定） |
+
+子 repo 単体の `main` push では本番 deploy しない。親でサブモジュール参照を更新してから `main` にマージする。
+
 
 ```
 Browser
