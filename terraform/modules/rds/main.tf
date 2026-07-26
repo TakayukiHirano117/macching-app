@@ -53,22 +53,22 @@ resource "aws_security_group" "db" {
 }
 
 resource "aws_db_instance" "this" {
-  identifier             = "${var.name_prefix}-postgres"
-  engine                 = "postgres"
-  engine_version         = "16"
-  instance_class         = "db.t4g.micro"
-  allocated_storage      = 20
-  max_allocated_storage  = 100
-  db_name                = var.db_name
-  username               = var.db_username
-  password               = var.db_password
-  db_subnet_group_name   = aws_db_subnet_group.this.name
-  vpc_security_group_ids = [aws_security_group.db.id]
-  publicly_accessible    = false
-  multi_az               = false
-  storage_encrypted      = true
-  skip_final_snapshot    = true
-  deletion_protection    = false
+  identifier              = "${var.name_prefix}-postgres"
+  engine                  = "postgres"
+  engine_version          = "16"
+  instance_class          = "db.t4g.micro"
+  allocated_storage       = 20
+  max_allocated_storage   = 100
+  db_name                 = var.db_name
+  username                = var.db_username
+  password                = var.db_password
+  db_subnet_group_name    = aws_db_subnet_group.this.name
+  vpc_security_group_ids  = [aws_security_group.db.id]
+  publicly_accessible     = false
+  multi_az                = false
+  storage_encrypted       = true
+  skip_final_snapshot     = true
+  deletion_protection     = false
   backup_retention_period = 7
 }
 
@@ -86,5 +86,5 @@ output "database_url" {
   # RDS は force_ssl のため SSL 必須。node-pg は CA 未同梱時に verify で失敗するため no-verify を使う
   # 参考: https://github.com/brianc/node-postgres/issues/2558
   # AWS: https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/PostgreSQL.Concepts.General.SSL.html
-  value     = "postgresql://${var.db_username}:${urlencode(var.db_password)}@${aws_db_instance.this.address}:${aws_db_instance.this.port}/${var.db_name}?sslmode=no-verify"
+  value = "postgresql://${var.db_username}:${urlencode(var.db_password)}@${aws_db_instance.this.address}:${aws_db_instance.this.port}/${var.db_name}?sslmode=no-verify"
 }

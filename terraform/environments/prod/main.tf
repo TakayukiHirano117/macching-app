@@ -5,12 +5,12 @@ data "aws_availability_zones" "available" {
 }
 
 locals {
-  azs            = slice(data.aws_availability_zones.available.names, 0, 2)
-  api_domain     = "${var.api_subdomain}.${var.domain_name}"
-  images_domain  = "${var.images_subdomain}.${var.domain_name}"
-  front_origins  = ["https://${var.domain_name}", "http://localhost:3001"]
-  photos_bucket  = "${var.name_prefix}-photos-${data.aws_caller_identity.current.account_id}"
-  ecr_image      = var.container_image != "" ? var.container_image : "${module.ecr.repository_url}:latest"
+  azs           = slice(data.aws_availability_zones.available.names, 0, 2)
+  api_domain    = "${var.api_subdomain}.${var.domain_name}"
+  images_domain = "${var.images_subdomain}.${var.domain_name}"
+  front_origins = ["https://${var.domain_name}", "http://localhost:3001"]
+  photos_bucket = "${var.name_prefix}-photos-${data.aws_caller_identity.current.account_id}"
+  ecr_image     = var.container_image != "" ? var.container_image : "${module.ecr.repository_url}:latest"
 }
 
 resource "random_password" "db" {
@@ -209,6 +209,18 @@ module "amplify" {
   access_token = var.github_access_token
   domain_name  = var.domain_name
   api_base_url = "https://${local.api_domain}/api/v1"
+}
+
+module "github_oidc_deploy" {
+  source = "../../modules/github_oidc_deploy"
+
+  name_prefix            = var.name_prefix
+  github_repository      = var.github_deploy_repository
+  ecr_repository_arn     = module.ecr.repository_arn
+  ecs_cluster_name       = module.ecs_api.cluster_name
+  ecs_service_name       = module.ecs_api.service_name
+  ecs_execution_role_arn = module.ecs_api.execution_role_arn
+  ecs_task_role_arn      = module.ecs_api.task_role_arn
 }
 
 resource "aws_secretsmanager_secret" "db_url" {

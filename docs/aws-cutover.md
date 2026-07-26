@@ -93,6 +93,46 @@ API はアプリ内インメモリでレート制限する（WAF / Redis / ECS �
 
 超過時は 429。詳細は `onion-hono-sample/.cursor/rules/rate-limit.mdc`。
 
+## CI / 本番リリース（PR → main）
+
+親 `macching-app` の `main` は ruleset `restrict-direct-push` により直プッシュ不可。  
+本番 API デプロイは親 `main` への PR マージ（または `workflow_dispatch`）のみ。
+
+| 対象 | トリガー | 仕組み |
+|---|---|---|
+| API | 親 `main` マージ（paths: `onion-hono-sample`, `deploy-aws.yml`） | [`.github/workflows/deploy-aws.yml`](../.github/workflows/deploy-aws.yml) |
+| Front | `next-front` の `main` 更新 | Amplify auto build |
+| DB migrate | 手動 | `make rds-migrate` など |
+
+### GitHub Secrets / Variables（親リポジトリ）
+
+| 種別 | 名前 | 例 |
+|---|---|---|
+| Secret | `AWS_ROLE_ARN` | `arn:aws:iam::615299732848:role/macching-prod-gha-deploy` |
+| Variable | `AWS_REGION` | `ap-northeast-1` |
+| Variable | `ECR_REPOSITORY` | `macching-prod-api` |
+| Variable | `ECS_CLUSTER` | `macching-prod-cluster` |
+| Variable | `ECS_SERVICE` | `macching-prod-api` |
+| Variable | `ECS_CONTAINER_NAME` | `api` |
+
+OIDC: AWS 側に `token.actions.githubusercontent.com` provider と  
+`macching-prod-gha-deploy` ロール（`repo:TakayukiHirano117/macching-app:ref:refs/heads/main` のみ Assume 可）。
+
+Terraform 管理: [`terraform/modules/github_oidc_deploy`](../terraform/modules/github_oidc_deploy/main.tf)  
+（手動作成済みロールを state に載せる場合）
+
+```bash
+cd terraform/environments/prod
+terraform import 'module.github_oidc_deploy.aws_iam_role.gha_deploy' macching-prod-gha-deploy
+```
+
+### マージ後の確認
+
+- `curl -sS https://api.hirano-ta.com/api/v1/health` → `{"status":"ok"}`
+- Amplify コンソールで Front ビルド成功
+- `https://hirano-ta.com/login` → 200
+- Amplify の `API_BASE_URL` が `https://api.hirano-ta.com/api/v1` であること
+
 ## 検証（実施済み 2026-07-26）
 
 - `curl -sS https://api.hirano-ta.com/api/v1` → 200

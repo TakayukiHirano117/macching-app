@@ -86,14 +86,26 @@ API_BASE_URL=http://localhost:3000/api/v1 bun run dev -- -p 3001
 | 画像 | S3 + CloudFront OAC | `https://images.hirano-ta.com` |
 | DB | Amazon RDS PostgreSQL | private subnet |
 
+### リリース手順（PR → main のみ）
+
+親 `main` への直プッシュは GitHub ruleset で禁止。本番 API のデプロイ契機は **親への PR マージ** のみ。
+
+1. 子リポジトリで PR を merge（API: 作業ブランチ → 取り込み先、Front: `next-front` の `main`）
+2. 親で submodule SHA を更新する PR を作成し、`main` へ merge
+3. API: 親 `main` マージで [`.github/workflows/deploy-aws.yml`](.github/workflows/deploy-aws.yml) が ECR → ECS デプロイ  
+   （変更パスが `onion-hono-sample` または workflow 自身のときのみ）
+4. Front: `next-front` の `main` 更新で Amplify が自動ビルド（`API_BASE_URL=https://api.hirano-ta.com/api/v1`）
+5. 確認: `https://api.hirano-ta.com/api/v1/health` と `https://hirano-ta.com/login`
+
+DB migrate は自動では走らない（`make rds-migrate` 等を手動）。
+
 **CI**
 
-| 用途 | Workflow |
+| 用途 | Workflow / 仕組み |
 |------|----------|
-| AWS 本番 | [`.github/workflows/deploy-aws.yml`](.github/workflows/deploy-aws.yml) |
-| Cloudflare レガシー（手動） | [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) |
-
-子 repo 単体の `main` push では本番 deploy しない。親でサブモジュール参照を更新してから `main` にマージする。
+| AWS 本番 API | [`.github/workflows/deploy-aws.yml`](.github/workflows/deploy-aws.yml)（親 `main`） |
+| フロント本番 | Amplify（`next-front` の `main`） |
+| Cloudflare レガシー | [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)（手動のみ） |
 
 
 ```
@@ -164,22 +176,22 @@ shared/
 ### 日常の開発（子 → 親）
 
 ```bash
-# 1. 子リポジトリで実装・commit・push
+# 1. 子リポジトリで実装 → PR → merge（直プッシュしない）
 cd onion-hono-sample   # または next-front
-git checkout develop   # next-front の場合は main
-git add .
-git commit -m "feat: ..."
-git push origin develop
+# feature ブランチで commit / push し、PR を作成して merge
 
-# 2. 親リポジトリでサブモジュールのポインタを更新
+# 2. 親リポジトリでサブモジュールのポインタを更新する PR を作成
 cd ..
+git checkout -b chore/bump-api
 git add onion-hono-sample   # または next-front
 git commit -m "chore: onion-hono-sample のサブモジュール参照を更新"
-git push origin main
+git push -u origin HEAD
+# GitHub で親 main 向け PR を作成して merge
 ```
 
 - 親の `git add next-front` は **コードのマージではなく、使う commit の固定** です
-- **子を push してから親を push** してください
+- **子を merge してから親 PR を出す**
+- 親 `main` への直プッシュは ruleset で禁止
 
 ### 同期（親 → 子）
 
