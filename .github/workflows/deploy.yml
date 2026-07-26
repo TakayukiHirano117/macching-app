@@ -1,5 +1,5 @@
-# develop → main マージ後（main への push）に本番へデプロイする。
-# サブモジュールが指す commit を checkout し、API → フロントの順で deploy する。
+# Cloudflare 向けデプロイ（レガシー手動実行）。
+# 通常の本番デプロイは deploy-aws.yml を使う。
 #
 # 必要な GitHub Secrets（親リポジトリ macching-app の Settings → Secrets）:
 #   CLOUDFLARE_API_TOKEN  … Cloudflare API Token（Workers 編集権限）
@@ -9,16 +9,13 @@
 #
 # 参考: onion-hono-sample/scripts/cloudflare-setup.md ステップ 9
 
-name: Deploy Production
+name: Deploy Cloudflare (legacy manual)
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 concurrency:
-  group: deploy-production
+  group: deploy-cloudflare-legacy
   cancel-in-progress: false
 
 jobs:

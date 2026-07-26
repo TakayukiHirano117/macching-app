@@ -2,6 +2,8 @@
 	submodule-bump submodule-bump-api submodule-bump-front submodule-commit \
 	api-up api-up-d api-down api-logs api-restart api-migrate api-test api-lint api-shell api-db-shell \
 	front-dev front-lint front-build \
+	tf-bootstrap tf-prod-plan tf-prod-apply ecr-push \
+	rds-migrate supabase-to-rds r2-to-s3 \
 	lint test
 
 API_DIR := onion-hono-sample
@@ -103,13 +105,36 @@ api-db-shell: ## PostgreSQL に接続
 # --- フロント ---
 
 front-dev: ## フロント dev サーバー（:$(FRONT_PORT)）
-	cd $(FRONT_DIR) && ONION_API_BASE_URL=$(API_URL) bun run dev -- -p $(FRONT_PORT)
+	cd $(FRONT_DIR) && API_BASE_URL=$(API_URL) bun run dev -- -p $(FRONT_PORT)
 
 front-lint: ## フロント lint
 	cd $(FRONT_DIR) && bun run lint
 
 front-build: ## フロント production build
 	cd $(FRONT_DIR) && bun run build
+
+# --- AWS ---
+
+tf-bootstrap: ## Terraform remote state bucket を作成
+	cd terraform/bootstrap && terraform init && terraform apply
+
+tf-prod-plan: ## prod Terraform plan
+	cd terraform/environments/prod && terraform init -input=false && terraform plan
+
+tf-prod-apply: ## prod Terraform apply
+	cd terraform/environments/prod && terraform apply
+
+ecr-push: ## API イメージを ECR へ push（ECR_REPOSITORY_URI / AWS_REGION 必須）
+	$(API_DIR)/scripts/ecr-push.sh $(TAG)
+
+rds-migrate: ## 本番 RDS へ ECS one-off で migration
+	./scripts/run-rds-migrate.sh
+
+supabase-to-rds: ## Supabase/ソース DB を pg_dump → RDS へ pg_restore（SUPABASE_DATABASE_URL 必須）
+	./scripts/run-supabase-to-rds.sh
+
+r2-to-s3: ## R2 画像を S3 へ同一キーでコピー（R2_* 必須）
+	./scripts/r2-to-s3-copy.sh
 
 # --- ショートカット（api-* と同義）---
 

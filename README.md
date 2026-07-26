@@ -64,7 +64,7 @@ Next.js のデフォルトポート（3000）と API が競合するため、フ
 ```bash
 cd next-front
 bun install
-ONION_API_BASE_URL=http://localhost:3000/api/v1 bun run dev -- -p 3001
+API_BASE_URL=http://localhost:3000/api/v1 bun run dev -- -p 3001
 ```
 
 ブラウザで `http://localhost:3001` を開きます。
@@ -73,26 +73,25 @@ ONION_API_BASE_URL=http://localhost:3000/api/v1 bun run dev -- -p 3001
 
 | 変数 | 必須 | 説明 |
 |------|------|------|
-| `ONION_API_BASE_URL` | ローカルでは必須 | API のベース URL（例: `http://localhost:3000/api/v1`）。Cloudflare 本番では Service Binding を使用するため不要 |
+| `API_BASE_URL` | 必須 | API のベース URL（例: `http://localhost:3000/api/v1`、本番: `https://api.hirano-ta.com/api/v1`） |
 
-## 本番デプロイ（Cloudflare + Supabase）
+## 本番デプロイ（AWS）
 
-**詳細手順（本番のみ）**: [`onion-hono-sample/scripts/cloudflare-setup.md`](onion-hono-sample/scripts/cloudflare-setup.md)
+詳細: [`terraform/README.md`](terraform/README.md) / [`docs/aws-cutover.md`](docs/aws-cutover.md)
 
-| コンポーネント | デプロイ先 | 備考 |
+| コンポーネント | デプロイ先 | URL |
 |---|---|---|
-| API | Cloudflare Workers（非公開） | Hyperdrive → Supabase、R2 に画像 |
-| フロント | Cloudflare Workers（OpenNext） | Service Binding で API に接続 |
-| DB | Supabase PostgreSQL | マイグレーションは CI / ローカルから実行 |
+| API | ECS Fargate + ALB | `https://api.hirano-ta.com/api/v1` |
+| フロント | Amplify Hosting | `https://hirano-ta.com` |
+| 画像 | S3 + CloudFront OAC | `https://images.hirano-ta.com` |
+| DB | Amazon RDS PostgreSQL | private subnet |
 
-**デプロイ順**: API → フロント → `MEDIA_PUBLIC_BASE_URL` 更新 → API 再 deploy
+**CI**
 
-**CI 方針**
-
-| 環境 | トリガー | 実行場所 |
-|------|----------|----------|
-| 本番 | 親 repo の `develop` → `main` マージ | [`macching-app/.github/workflows/deploy.yml`](.github/workflows/deploy.yml) |
-| stg（今後） | 各子 repo の `develop` 向け | 子 repo ごとに独立（予定） |
+| 用途 | Workflow |
+|------|----------|
+| AWS 本番 | [`.github/workflows/deploy-aws.yml`](.github/workflows/deploy-aws.yml) |
+| Cloudflare レガシー（手動） | [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) |
 
 子 repo 単体の `main` push では本番 deploy しない。親でサブモジュール参照を更新してから `main` にマージする。
 
