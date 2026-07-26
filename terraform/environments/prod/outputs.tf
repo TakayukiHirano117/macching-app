@@ -41,3 +41,7 @@ output "front_url" {
 output "database_secret_arn" {
   value = aws_secretsmanager_secret.db_url.arn
 }
+
+output "github_actions_deploy_role_arn" {
+  value = module.github_oidc_deploy.role_arn
+}

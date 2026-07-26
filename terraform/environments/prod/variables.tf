@@ -42,6 +42,12 @@ variable "github_access_token" {
   default     = ""
 }
 
+variable "github_deploy_repository" {
+  type        = string
+  description = "GitHub Actions OIDC を許可する親リポジトリ（owner/name）"
+  default     = "TakayukiHirano117/macching-app"
+}
+
 variable "enable_amplify" {
   type        = bool
   description = "Amplify Hosting を作成するか"

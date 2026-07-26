@@ -14,6 +14,7 @@
 | S3 + CloudFront OAC | `images.hirano-ta.com` |
 | Amplify Hosting (WEB_COMPUTE) | `hirano-ta.com` |
 | Secrets Manager | `DATABASE_URL` |
+| IAM `macching-prod-gha-deploy` | 親 repo GitHub Actions（OIDC）から ECR/ECS デプロイ |
 
 ## 前提
 
@@ -79,3 +80,15 @@ terraform -chdir=terraform/environments/prod apply \
 - `api_url` / `front_url` / `images_public_base_url`
 - `amplify_app_id`
 - `database_secret_arn`
+- `github_actions_deploy_role_arn`
+
+## GitHub Actions OIDC
+
+親 `main` からのデプロイ用ロールは `module.github_oidc_deploy`。  
+すでに CLI で作成済みの場合は import してから apply:
+
+```bash
+terraform import 'module.github_oidc_deploy.aws_iam_role.gha_deploy' macching-prod-gha-deploy
+```
+
+ロール ARN を親リポジトリ Secret `AWS_ROLE_ARN` に設定する（手順は `docs/aws-cutover.md`）。
